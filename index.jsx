@@ -103,7 +103,7 @@ function initFirebase() {
 // Wait for Firebase modules to load
 const initFirebaseWhenReady = () => {
   if (window.firebaseReady && initFirebase()) {
-    console.log('Firebase initialized successfully');
+    // console.log('Firebase initialized successfully');
     return true;
   }
   return false;
@@ -143,10 +143,18 @@ const MahjongIcon = ({ className, onClick }) => (
 
 // --- Constants ---
 const BRANCHES = [
-  "桃園總店", "中壢分店", "南崁分店", "八德分店", "藝文分店", "平鎮分店"
+  "大林店", "八德店", "南崁店", "草漯店", "楊梅店", "中和中正店"
 ];
 
-const ROOM_TYPES = ["小包廂", "中包廂", "大包廂", "VIP包廂"];
+// 各分店對應的包廂列表
+const BRANCH_ROOMS = {
+  "大林店": ["南", "西", "北", "中", "發", "白"],
+  "八德店": ["梅", "蘭", "竹", "菊", "春", "夏", "秋", "冬", "轉運", "改運"],
+  "南崁店": ["1條", "2條", "3條", "4條", "5條", "6條", "7條"],
+  "草漯店": ["1筒", "2筒", "3筒", "4筒", "5筒", "6筒"],
+  "楊梅店": ["康", "財", "福", "祿", "壽", "喜", "順", "安", "旺"],
+  "中和中正店": ["壹", "貳", "參", "肆", "伍", "陸", "柒", "捌", "玖", "拾"]
+};
 const DURATIONS = [
   { label: "1小時", val: 1 },
   { label: "2小時", val: 2 },
@@ -186,9 +194,14 @@ function App() {
     phone: '',
     date: getTodayDateString(),
     branch: BRANCHES[0],
-    room: ROOM_TYPES[0],
+    room: BRANCH_ROOMS[BRANCHES[0]]?.[0] || '',
     duration: 1
   });
+
+  // 獲取當前分店的包廂列表
+  const getCurrentRooms = () => {
+    return BRANCH_ROOMS[formData.branch] || [];
+  };
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [scratchResult, setScratchResult] = useState(null);
@@ -600,22 +613,30 @@ function App() {
             </div>
             
             <div className="grid grid-cols-2 gap-3">
-              <div>
+              <div className="flex flex-col">
                 <label className="block text-xs text-yellow-200 mb-1">日期</label>
                 <input 
                   type="date" 
                   value={formData.date}
                   onChange={(e) => setFormData({...formData, date: e.target.value})}
-                  className="w-full bg-red-950/50 border border-red-700 rounded-lg p-3 text-white focus:outline-none focus:border-yellow-400"
+                  className="w-full bg-red-950/50 border border-red-700 rounded-lg p-3 text-white focus:outline-none focus:border-yellow-400 min-h-[48px]"
                   required
                 />
               </div>
-              <div>
+              <div className="flex flex-col">
                 <label className="block text-xs text-yellow-200 mb-1">分店</label>
                 <select 
                   value={formData.branch}
-                  onChange={(e) => setFormData({...formData, branch: e.target.value})}
-                  className="w-full bg-red-950/50 border border-red-700 rounded-lg p-3 text-white focus:outline-none focus:border-yellow-400 appearance-none"
+                  onChange={(e) => {
+                    const newBranch = e.target.value;
+                    const newRooms = BRANCH_ROOMS[newBranch] || [];
+                    setFormData({
+                      ...formData, 
+                      branch: newBranch,
+                      room: newRooms[0] || ''
+                    });
+                  }}
+                  className="w-full bg-red-950/50 border border-red-700 rounded-lg p-3 text-white focus:outline-none focus:border-yellow-400 appearance-none min-h-[48px]"
                 >
                   {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
                 </select>
@@ -623,22 +644,22 @@ function App() {
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <div>
+              <div className="flex flex-col">
                 <label className="block text-xs text-yellow-200 mb-1">包廂</label>
                 <select 
                   value={formData.room}
                   onChange={(e) => setFormData({...formData, room: e.target.value})}
-                  className="w-full bg-red-950/50 border border-red-700 rounded-lg p-3 text-white focus:outline-none focus:border-yellow-400"
+                  className="w-full bg-red-950/50 border border-red-700 rounded-lg p-3 text-white focus:outline-none focus:border-yellow-400 appearance-none min-h-[48px]"
                 >
-                  {ROOM_TYPES.map(r => <option key={r} value={r}>{r}</option>)}
+                  {getCurrentRooms().map(r => <option key={r} value={r}>{r}</option>)}
                 </select>
               </div>
-              <div>
+              <div className="flex flex-col">
                 <label className="block text-xs text-yellow-200 mb-1">時長</label>
                 <select 
                   value={formData.duration}
                   onChange={(e) => setFormData({...formData, duration: parseInt(e.target.value)})}
-                  className="w-full bg-red-950/50 border border-red-700 rounded-lg p-3 text-white focus:outline-none focus:border-yellow-400"
+                  className="w-full bg-red-950/50 border border-red-700 rounded-lg p-3 text-white focus:outline-none focus:border-yellow-400 appearance-none min-h-[48px]"
                 >
                   {DURATIONS.map(d => <option key={d.label} value={d.val}>{d.label}</option>)}
                 </select>
@@ -798,6 +819,7 @@ function App() {
             <button
               onClick={clearAllData}
               className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors"
+              style={{marginBottom: '10px'}}
             >
               🗑️ 清空全部資料
             </button>
@@ -814,9 +836,9 @@ function App() {
                 <table className="w-full text-left border-collapse">
                   <thead className="bg-gray-50 text-gray-600 text-sm uppercase">
                     <tr>
-                      <th className="p-4">時間</th>
-                      <th className="p-4">分店 / 包廂</th>
-                      <th className="p-4">電話</th>
+                      <th className="p-4">登錄時間</th>
+                      <th className="p-4">會員電話</th>
+                      <th className="p-4">預約資訊</th>
                       {adminTab === 'grand' ? (
                         <th className="p-4 text-blue-600">抽獎序號</th>
                       ) : (
@@ -833,16 +855,16 @@ function App() {
                         <td className="p-4 text-gray-500">
                            {row.timestamp ? new Date(row.timestamp.seconds * 1000).toLocaleString('zh-TW') : '剛剛'}
                         </td>
-                        <td className="p-4">
-                          <div className="font-bold">{row.branch}</div>
-                          <div className="text-xs text-gray-500">{row.room} / {row.duration}H</div>
-                        </td>
                         <td className="p-4 font-mono">{row.phone}</td>
+                        <td className="p-4">
+                          <div className="font-bold">{row.branch || '未填寫'}</div>
+                          <div className="text-xs text-gray-500">{row.room || '未填寫'}．{row.date || '未填寫'}</div>
+                        </td>
                         {adminTab === 'grand' ? (
-                          <td className="p-4 font-mono font-bold text-lg text-blue-600">{row.grandDrawSerial}</td>
+                          <td className="p-4 font-mono font-bold text-lg text-blue-600">{row.grandDrawSerial || '-'}</td>
                         ) : (
                           <>
-                            <td className="p-4 font-medium text-green-700">{row.scratchPrizeName}</td>
+                            <td className="p-4 font-medium text-green-700">{row.scratchPrizeName || '-'}</td>
                             <td className="p-4 text-center">
                               <button 
                                 onClick={() => togglePrizeSent(row.id, row.prizeSent)}

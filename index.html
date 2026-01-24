@@ -61,12 +61,12 @@
     };
     
     // Debug: Log available functions
-    console.log('Firebase Firestore loaded:', {
-      hasCollection: !!window.firebaseFirestore.collection,
-      hasGetDocs: !!window.firebaseFirestore.getDocs,
-      hasAddDoc: !!window.firebaseFirestore.addDoc,
-      firestoreKeys: Object.keys(firebaseFirestore)
-    });
+    // console.log('Firebase Firestore loaded:', {
+    //   hasCollection: !!window.firebaseFirestore.collection,
+    //   hasGetDocs: !!window.firebaseFirestore.getDocs,
+    //   hasAddDoc: !!window.firebaseFirestore.addDoc,
+    //   firestoreKeys: Object.keys(firebaseFirestore)
+    // });
     
     // Extract all auth functions - Firebase Auth uses named exports (暫時不使用)
     window.firebaseAuth = {
@@ -76,12 +76,12 @@
     };
     
     // Debug: Log available functions
-    console.log('Firebase Auth loaded:', {
-      hasGetAuth: !!window.firebaseAuth.getAuth,
-      hasSignInAnonymously: !!window.firebaseAuth.signInAnonymously,
-      hasOnAuthStateChanged: !!window.firebaseAuth.onAuthStateChanged,
-      firebaseAuthKeys: Object.keys(firebaseAuth)
-    });
+    // console.log('Firebase Auth loaded:', {
+    //   hasGetAuth: !!window.firebaseAuth.getAuth,
+    //   hasSignInAnonymously: !!window.firebaseAuth.signInAnonymously,
+    //   hasOnAuthStateChanged: !!window.firebaseAuth.onAuthStateChanged,
+    //   firebaseAuthKeys: Object.keys(firebaseAuth)
+    // });
     
     // Load lucide-react icons
     try {
@@ -104,7 +104,7 @@
     
     // Trigger app load after dependencies are ready
     window.firebaseReady = true;
-    console.log('Firebase modules loaded successfully');
+    // console.log('Firebase modules loaded successfully');
     
     // 觸發 Firebase 初始化
     if (window.initFirebaseWhenReady) {
