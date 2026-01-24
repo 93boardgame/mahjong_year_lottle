@@ -59,6 +59,86 @@ const XCircle = getIcon('XCircle');
 const Search = getIcon('Search');
 const LayoutGrid = getIcon('LayoutGrid');
 
+// NoteEditor 組件：用於編輯備註
+function NoteEditor({ value, onSave }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(value || '');
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    setEditValue(value || '');
+  }, [value]);
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isEditing]);
+
+  const handleSave = () => {
+    onSave(editValue.trim());
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setEditValue(value || '');
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && e.ctrlKey) {
+      e.preventDefault();
+      handleSave();
+    } else if (e.key === 'Escape') {
+      handleCancel();
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <div className="space-y-2">
+        <textarea
+          ref={inputRef}
+          value={editValue}
+          onChange={(e) => setEditValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          className="w-full px-2 py-1 text-sm border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+          rows="2"
+          placeholder="輸入備註..."
+        />
+        <div className="flex gap-2 justify-end">
+          <button
+            onClick={handleCancel}
+            className="px-3 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
+          >
+            取消
+          </button>
+          <button
+            onClick={handleSave}
+            className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+          >
+            儲存
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      onClick={() => setIsEditing(true)}
+      className="min-h-[32px] px-2 py-1 text-sm text-gray-600 cursor-pointer hover:bg-gray-100 rounded border border-transparent hover:border-gray-300 transition-colors"
+      title="點擊編輯備註"
+    >
+      {value ? (
+        <div className="whitespace-pre-wrap break-words">{value}</div>
+      ) : (
+        <div className="text-gray-400 italic">點擊新增備註...</div>
+      )}
+    </div>
+  );
+}
+
 // --- Firebase Configuration ---
 // 這裡使用您的環境變數或預設值。在實際部署時，請確保 Firebase 已啟用 Firestore 和 Anonymous Auth
 let firebaseConfig, app, db, auth, appId;
@@ -513,6 +593,35 @@ function App() {
     }
   };
 
+  const updateNote = async (docId, newNote) => {
+    try {
+      // 動態獲取 Firestore 函數
+      const updateDoc = getFirestoreFn('updateDoc');
+      const doc = getFirestoreFn('doc');
+      
+      if (!updateDoc || !doc || !db) {
+        alert('資料庫連線尚未準備好，請稍後再試');
+        return;
+      }
+      
+      await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'orders', docId), {
+        note: newNote || ''
+      });
+      
+      // 更新本地狀態
+      setAdminData(prev => prev.map(item => 
+        item.id === docId ? { ...item, note: newNote || '' } : item
+      ));
+    } catch (err) {
+      console.error("Update note error:", err);
+      if (err.code === 'permission-denied' || err.message?.includes('permission') || err.message?.includes('Missing or insufficient permissions')) {
+        alert('權限不足：請檢查 Firestore 安全規則設置');
+      } else {
+        alert('更新備註失敗：' + (err.message || '未知錯誤'));
+      }
+    }
+  };
+
   // 清空全部資料
   const clearAllData = async () => {
     // 確認對話框
@@ -847,6 +956,7 @@ function App() {
                           <th className="p-4 text-center">狀態</th>
                         </>
                       )}
+                      <th className="p-4">備註</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 text-sm">
@@ -879,6 +989,12 @@ function App() {
                             </td>
                           </>
                         )}
+                        <td className="p-4">
+                          <NoteEditor 
+                            value={row.note || ''} 
+                            onSave={(newNote) => updateNote(row.id, newNote)}
+                          />
+                        </td>
                       </tr>
                     ))}
                   </tbody>
