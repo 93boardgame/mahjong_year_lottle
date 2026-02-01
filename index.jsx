@@ -819,13 +819,13 @@ function App() {
             >
               {loading ? <Loader2 className="animate-spin" /> : <><Ticket size={20} /> 確認資料並抽獎</>}
             </button>
-            <p className="text-center text-xs text-red-300 mt-2">滿4小時以上即具備iPhone 17抽獎資格</p>
+            <p className="text-center text-xs text-red-300 mt-2">不論消費時數都可登錄刮刮樂<br/>滿4小時以上即具備iPhone 17抽獎資格</p>
           </form>
         </div>
 
         {/* Footer */}
         <div className="mt-auto py-6 flex flex-col items-center">
-           <p className="text-yellow-500/50 text-xs">© 2025 桃園闆娘麻將館</p>
+           <p className="text-yellow-500/50 text-xs">© 2026 桃園闆娘麻將館</p>
         </div>
 
         {/* Admin Trigger */}
