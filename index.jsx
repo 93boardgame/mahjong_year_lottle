@@ -266,13 +266,32 @@ const getTodayDateString = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 
+// 僅允許選擇 2 月：回傳當年 2 月的 min/max（考慮閏年）
+const getFebruaryDateRange = () => {
+  const year = new Date().getFullYear();
+  const isLeap = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+  const maxDay = isLeap ? 29 : 28;
+  return {
+    min: `${year}-02-01`,
+    max: `${year}-02-${String(maxDay).padStart(2, '0')}`
+  };
+};
+
+// 預設日期：若本月是 2 月則為今天，否則為當年 2 月 1 日
+const getDefaultFebruaryDate = () => {
+  const d = new Date();
+  if (d.getMonth() === 1) return getTodayDateString();
+  const { min } = getFebruaryDateRange();
+  return min;
+};
+
 // --- Main App Component ---
 function App() {
   const [user, setUser] = useState(null);
   const [view, setView] = useState('home'); // home, scratch, result, admin, adminLogin
   const [formData, setFormData] = useState({
     phone: '',
-    date: getTodayDateString(),
+    date: getDefaultFebruaryDate(),
     branch: BRANCHES[0],
     room: BRANCH_ROOMS[BRANCHES[0]]?.[0] || '',
     duration: 1
@@ -622,56 +641,60 @@ function App() {
     }
   };
 
-  // 清空全部資料
-  const clearAllData = async () => {
-    // 確認對話框
-    const confirmMessage = '⚠️ 警告：此操作將刪除所有訂單資料，且無法復原！\n\n確定要清空全部資料嗎？';
-    if (!confirm(confirmMessage)) {
-      return;
-    }
-    
-    // 二次確認
-    if (!confirm('請再次確認：真的要刪除所有資料嗎？')) {
+  // 下載 Excel 報表（CSV，含 UTF-8 BOM 供 Excel 正確顯示中文）
+  const downloadExcelReport = async () => {
+    const collection = getFirestoreFn('collection');
+    const getDocs = getFirestoreFn('getDocs');
+
+    if (!collection || !getDocs || !db) {
+      alert('資料庫連線尚未準備好，請稍後再試');
       return;
     }
 
     try {
       setLoading(true);
-      
-      // 動態獲取 Firestore 函數
-      const collection = getFirestoreFn('collection');
-      const getDocs = getFirestoreFn('getDocs');
-      const deleteDoc = getFirestoreFn('deleteDoc');
-      const doc = getFirestoreFn('doc');
-      
-      if (!collection || !getDocs || !deleteDoc || !doc || !db) {
-        alert('資料庫連線尚未準備好，請稍後再試');
-        setLoading(false);
-        return;
-      }
-      
-      // 獲取所有訂單
       const ordersRef = collection(db, 'artifacts', appId, 'public', 'data', 'orders');
       const snapshot = await getDocs(ordersRef);
-      
-      // 刪除所有文檔
-      const deletePromises = snapshot.docs.map(d => 
-        deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'orders', d.id))
-      );
-      
-      await Promise.all(deletePromises);
-      
-      // 清空本地狀態
-      setAdminData([]);
-      
-      alert(`✅ 已成功刪除 ${snapshot.docs.length} 筆資料`);
-      
+      const rows = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      // 依時間戳降序
+      rows.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
+      const headers = ['登錄時間', '會員電話', '分店', '包廂', '日期', '時長(小時)', '大獎資格', '抽獎序號', '刮刮樂獎項', '已發獎', '備註'];
+      const escapeCsv = (v) => {
+        const s = (v == null ? '' : String(v)).replace(/"/g, '""');
+        return /[",\n\r]/.test(s) ? `"${s}"` : s;
+      };
+
+      const toRow = (row) => [
+        row.timestamp ? new Date(row.timestamp.seconds * 1000).toLocaleString('zh-TW') : '',
+        row.phone || '',
+        row.branch || '',
+        row.room || '',
+        row.date || '',
+        row.duration ?? '',
+        row.isGrandEligible ? '是' : '否',
+        row.grandDrawSerial || '',
+        row.scratchPrizeName || '',
+        row.prizeSent ? '是' : '否',
+        (row.note || '').replace(/\r?\n/g, ' ')
+      ].map(escapeCsv).join(',');
+
+      const csvContent = '\uFEFF' + headers.map(escapeCsv).join(',') + '\n' + rows.map(toRow).join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `抽獎報表_${getTodayDateString()}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      alert(`✅ 已下載 ${rows.length} 筆資料`);
     } catch (err) {
-      console.error('Clear data error:', err);
+      console.error('Download report error:', err);
       if (err.code === 'permission-denied' || err.message?.includes('permission') || err.message?.includes('Missing or insufficient permissions')) {
         alert('權限不足：請檢查 Firestore 安全規則設置');
       } else {
-        alert('清空資料失敗：' + (err.message || '未知錯誤'));
+        alert('下載報表失敗：' + (err.message || '未知錯誤'));
       }
     } finally {
       setLoading(false);
@@ -715,24 +738,32 @@ function App() {
                 maxLength="10"
                 value={formData.phone}
                 onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                className="w-full bg-red-950/50 border border-red-700 rounded-lg p-3 text-white focus:outline-none focus:border-yellow-400 placeholder-red-400/50 transition-colors"
+                className="w-full h-12 box-border bg-red-950/50 border border-red-700 rounded-lg px-3 py-0 text-base text-white focus:outline-none focus:border-yellow-400 placeholder-red-400/50 transition-colors"
                 placeholder="請輸入會員電話 (09xxxxxxxx)"
                 required
               />
             </div>
             
+            {/* 表單欄位統一：h-12 + text-base + min-w-0 避免手機上 date 與 select 大小/跑版不一致 */}
             <div className="grid grid-cols-2 gap-3">
-              <div className="flex flex-col">
+              <div className="flex flex-col min-w-0">
                 <label className="block text-xs text-yellow-200 mb-1">日期</label>
                 <input 
                   type="date" 
                   value={formData.date}
-                  onChange={(e) => setFormData({...formData, date: e.target.value})}
-                  className="w-full bg-red-950/50 border border-red-700 rounded-lg p-3 text-white focus:outline-none focus:border-yellow-400 min-h-[48px]"
+                  min={getFebruaryDateRange().min}
+                  max={getFebruaryDateRange().max}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    const { min, max } = getFebruaryDateRange();
+                    const clamped = v < min ? min : (v > max ? max : v);
+                    setFormData({ ...formData, date: clamped });
+                  }}
+                  className="w-full h-12 box-border bg-red-950/50 border border-red-700 rounded-lg px-3 py-0 text-base text-white focus:outline-none focus:border-yellow-400 [color-scheme:dark]"
                   required
                 />
               </div>
-              <div className="flex flex-col">
+              <div className="flex flex-col min-w-0">
                 <label className="block text-xs text-yellow-200 mb-1">分店</label>
                 <select 
                   value={formData.branch}
@@ -745,7 +776,7 @@ function App() {
                       room: newRooms[0] || ''
                     });
                   }}
-                  className="w-full bg-red-950/50 border border-red-700 rounded-lg p-3 text-white focus:outline-none focus:border-yellow-400 appearance-none min-h-[48px]"
+                  className="w-full h-12 box-border bg-red-950/50 border border-red-700 rounded-lg px-3 py-0 text-base text-white focus:outline-none focus:border-yellow-400 appearance-none"
                 >
                   {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
                 </select>
@@ -753,22 +784,22 @@ function App() {
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              <div className="flex flex-col">
+              <div className="flex flex-col min-w-0">
                 <label className="block text-xs text-yellow-200 mb-1">包廂</label>
                 <select 
                   value={formData.room}
                   onChange={(e) => setFormData({...formData, room: e.target.value})}
-                  className="w-full bg-red-950/50 border border-red-700 rounded-lg p-3 text-white focus:outline-none focus:border-yellow-400 appearance-none min-h-[48px]"
+                  className="w-full h-12 box-border bg-red-950/50 border border-red-700 rounded-lg px-3 py-0 text-base text-white focus:outline-none focus:border-yellow-400 appearance-none"
                 >
                   {getCurrentRooms().map(r => <option key={r} value={r}>{r}</option>)}
                 </select>
               </div>
-              <div className="flex flex-col">
+              <div className="flex flex-col min-w-0">
                 <label className="block text-xs text-yellow-200 mb-1">時長</label>
                 <select 
                   value={formData.duration}
                   onChange={(e) => setFormData({...formData, duration: parseInt(e.target.value)})}
-                  className="w-full bg-red-950/50 border border-red-700 rounded-lg p-3 text-white focus:outline-none focus:border-yellow-400 appearance-none min-h-[48px]"
+                  className="w-full h-12 box-border bg-red-950/50 border border-red-700 rounded-lg px-3 py-0 text-base text-white focus:outline-none focus:border-yellow-400 appearance-none"
                 >
                   {DURATIONS.map(d => <option key={d.label} value={d.val}>{d.label}</option>)}
                 </select>
@@ -926,11 +957,13 @@ function App() {
               </button>
             </div>
             <button
-              onClick={clearAllData}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors"
+              onClick={downloadExcelReport}
+              disabled={loading}
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
               style={{marginBottom: '10px'}}
             >
-              🗑️ 清空全部資料
+              {loading ? <Loader2 className="animate-spin w-4 h-4" /> : null}
+              📥 下載 Excel 報表
             </button>
           </div>
 
