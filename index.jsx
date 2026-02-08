@@ -39,7 +39,7 @@ const createFallbackIcon = (viewBox = "0 0 24 24") => {
         className: className,
         style: style,
       },
-      React.createElement("circle", { cx: "12", cy: "12", r: "10" }),
+      React.createElement("circle", { cx: "12", cy: "12", r: "10" })
     );
   };
 };
@@ -295,23 +295,23 @@ const DURATIONS = [
 ];
 
 const PRIZES = [
-  { id: "none_1", name: "銘謝惠顧", type: "none", prob: 0.38, limit: -1 },
-  { id: "none_2", name: "下次再加油", type: "none", prob: 0.38, limit: -1 },
-  { id: "ext_1h", name: "1小時續時券", type: "win", prob: 0.1, limit: -1 },
-  { id: "disc_50", name: "50元折價券", type: "win", prob: 0.1, limit: -1 },
-  { id: "ext_2h", name: "2小時續時券", type: "win", prob: 0.034, limit: 30 },
+  { id: "none_1", name: "銘謝惠顧", type: "none", prob: 0.2625, limit: -1 },
+  { id: "none_2", name: "下次再加油", type: "none", prob: 0.2625, limit: -1 },
+  { id: "ext_1h", name: "1小時續時券", type: "win", prob: 0.2, limit: -1 },
+  { id: "disc_50", name: "50元折價券", type: "win", prob: 0.2, limit: -1 },
+  { id: "ext_2h", name: "2小時續時券", type: "win", prob: 0.06, limit: 30 },
   {
     id: "free_2h",
     name: "2小時免費包廂卷",
     type: "win",
-    prob: 0.005,
+    prob: 0.01,
     limit: 15,
   },
   {
     id: "free_4h",
     name: "4小時免費包廂卷",
     type: "win",
-    prob: 0.001,
+    prob: 0.005,
     limit: 5,
   },
 ];
@@ -325,7 +325,7 @@ const getTodayDateString = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
     2,
-    "0",
+    "0"
   )}-${String(d.getDate()).padStart(2, "0")}`;
 };
 
@@ -474,7 +474,7 @@ function App() {
       const q = query(
         collection(db, "artifacts", appId, "public", "data", "orders"),
         where("phone", "==", formData.phone),
-        where("date", "==", formData.date),
+        where("date", "==", formData.date)
       );
       const snapshot = await getDocs(q);
 
@@ -511,7 +511,7 @@ function App() {
           scratchPrizeType: prize.type,
           prizeSent: false, // For backend tracking
           timestamp: serverTimestamp(),
-        },
+        }
       );
 
       setOrderId(docRef.id);
@@ -528,7 +528,7 @@ function App() {
         err.message?.includes("Missing or insufficient permissions")
       ) {
         setError(
-          "權限不足：請檢查 Firestore 安全規則設置。\n\n請在 Firebase 控制台 > Firestore Database > Rules 中設置規則。",
+          "權限不足：請檢查 Firestore 安全規則設置。\n\n請在 Firebase 控制台 > Firestore Database > Rules 中設置規則。"
         );
       } else {
         setError("系統連線忙碌中，請稍後再試。");
@@ -576,7 +576,7 @@ function App() {
           "public",
           "data",
           "stats",
-          "prize_counts",
+          "prize_counts"
         );
         // Note: In a real app, use runTransaction. Here we read then verify.
         const statsSnap = await getDoc(statsRef);
@@ -641,7 +641,7 @@ function App() {
         appId,
         "public",
         "data",
-        "orders",
+        "orders"
       );
       const snap = await getDocs(colRef);
       let data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
@@ -672,7 +672,7 @@ function App() {
       ) {
         setLoading(false);
         alert(
-          "權限不足：請檢查 Firestore 安全規則設置。\n\n請在 Firebase 控制台 > Firestore Database > Rules 中設置規則。",
+          "權限不足：請檢查 Firestore 安全規則設置。\n\n請在 Firebase 控制台 > Firestore Database > Rules 中設置規則。"
         );
         return;
       }
@@ -699,13 +699,13 @@ function App() {
         doc(db, "artifacts", appId, "public", "data", "orders", docId),
         {
           prizeSent: !currentStatus,
-        },
+        }
       );
       // Refresh local state
       setAdminData((prev) =>
         prev.map((item) =>
-          item.id === docId ? { ...item, prizeSent: !currentStatus } : item,
-        ),
+          item.id === docId ? { ...item, prizeSent: !currentStatus } : item
+        )
       );
     } catch (err) {
       console.error("Update error:", err);
@@ -736,14 +736,14 @@ function App() {
         doc(db, "artifacts", appId, "public", "data", "orders", docId),
         {
           note: newNote || "",
-        },
+        }
       );
 
       // 更新本地狀態
       setAdminData((prev) =>
         prev.map((item) =>
-          item.id === docId ? { ...item, note: newNote || "" } : item,
-        ),
+          item.id === docId ? { ...item, note: newNote || "" } : item
+        )
       );
     } catch (err) {
       console.error("Update note error:", err);
@@ -777,14 +777,14 @@ function App() {
         appId,
         "public",
         "data",
-        "orders",
+        "orders"
       );
       const snapshot = await getDocs(ordersRef);
       const rows = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
 
       // 依時間戳降序
       rows.sort(
-        (a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0),
+        (a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)
       );
 
       const headers = [
@@ -1247,7 +1247,7 @@ function App() {
                         <td className="p-4 text-gray-500">
                           {row.timestamp
                             ? new Date(
-                                row.timestamp.seconds * 1000,
+                                row.timestamp.seconds * 1000
                               ).toLocaleString("zh-TW")
                             : "剛剛"}
                         </td>
