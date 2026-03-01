@@ -39,7 +39,7 @@ const createFallbackIcon = (viewBox = "0 0 24 24") => {
         className: className,
         style: style,
       },
-      React.createElement("circle", { cx: "12", cy: "12", r: "10" })
+      React.createElement("circle", { cx: "12", cy: "12", r: "10" }),
     );
   };
 };
@@ -162,8 +162,8 @@ function initFirebase() {
       typeof window.__firebase_config !== "undefined"
         ? window.__firebase_config
         : typeof __firebase_config !== "undefined"
-        ? __firebase_config
-        : {};
+          ? __firebase_config
+          : {};
 
     // 如果配置為空對象，使用默認配置
     if (!firebaseConfig || Object.keys(firebaseConfig).length === 0) {
@@ -179,8 +179,8 @@ function initFirebase() {
       typeof window.__app_id !== "undefined"
         ? window.__app_id
         : typeof __app_id !== "undefined"
-        ? __app_id
-        : "default-mahjong-app";
+          ? __app_id
+          : "default-mahjong-app";
     return true;
   } catch (e) {
     console.error("Firebase initialization error:", e);
@@ -325,7 +325,7 @@ const getTodayDateString = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
     2,
-    "0"
+    "0",
   )}-${String(d.getDate()).padStart(2, "0")}`;
 };
 
@@ -474,7 +474,7 @@ function App() {
       const q = query(
         collection(db, "artifacts", appId, "public", "data", "orders"),
         where("phone", "==", formData.phone),
-        where("date", "==", formData.date)
+        where("date", "==", formData.date),
       );
       const snapshot = await getDocs(q);
 
@@ -511,7 +511,7 @@ function App() {
           scratchPrizeType: prize.type,
           prizeSent: false, // For backend tracking
           timestamp: serverTimestamp(),
-        }
+        },
       );
 
       setOrderId(docRef.id);
@@ -528,7 +528,7 @@ function App() {
         err.message?.includes("Missing or insufficient permissions")
       ) {
         setError(
-          "權限不足：請檢查 Firestore 安全規則設置。\n\n請在 Firebase 控制台 > Firestore Database > Rules 中設置規則。"
+          "權限不足：請檢查 Firestore 安全規則設置。\n\n請在 Firebase 控制台 > Firestore Database > Rules 中設置規則。",
         );
       } else {
         setError("系統連線忙碌中，請稍後再試。");
@@ -576,7 +576,7 @@ function App() {
           "public",
           "data",
           "stats",
-          "prize_counts"
+          "prize_counts",
         );
         // Note: In a real app, use runTransaction. Here we read then verify.
         const statsSnap = await getDoc(statsRef);
@@ -641,7 +641,7 @@ function App() {
         appId,
         "public",
         "data",
-        "orders"
+        "orders",
       );
       const snap = await getDocs(colRef);
       let data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
@@ -672,7 +672,7 @@ function App() {
       ) {
         setLoading(false);
         alert(
-          "權限不足：請檢查 Firestore 安全規則設置。\n\n請在 Firebase 控制台 > Firestore Database > Rules 中設置規則。"
+          "權限不足：請檢查 Firestore 安全規則設置。\n\n請在 Firebase 控制台 > Firestore Database > Rules 中設置規則。",
         );
         return;
       }
@@ -699,13 +699,13 @@ function App() {
         doc(db, "artifacts", appId, "public", "data", "orders", docId),
         {
           prizeSent: !currentStatus,
-        }
+        },
       );
       // Refresh local state
       setAdminData((prev) =>
         prev.map((item) =>
-          item.id === docId ? { ...item, prizeSent: !currentStatus } : item
-        )
+          item.id === docId ? { ...item, prizeSent: !currentStatus } : item,
+        ),
       );
     } catch (err) {
       console.error("Update error:", err);
@@ -736,14 +736,14 @@ function App() {
         doc(db, "artifacts", appId, "public", "data", "orders", docId),
         {
           note: newNote || "",
-        }
+        },
       );
 
       // 更新本地狀態
       setAdminData((prev) =>
         prev.map((item) =>
-          item.id === docId ? { ...item, note: newNote || "" } : item
-        )
+          item.id === docId ? { ...item, note: newNote || "" } : item,
+        ),
       );
     } catch (err) {
       console.error("Update note error:", err);
@@ -777,14 +777,14 @@ function App() {
         appId,
         "public",
         "data",
-        "orders"
+        "orders",
       );
       const snapshot = await getDocs(ordersRef);
       const rows = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
 
       // 依時間戳降序
       rows.sort(
-        (a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)
+        (a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0),
       );
 
       const headers = [
@@ -904,7 +904,8 @@ function App() {
                 onChange={(e) =>
                   setFormData({ ...formData, phone: e.target.value })
                 }
-                className="w-full h-12 box-border bg-red-950/50 border border-red-700 rounded-lg px-3 py-0 text-base text-white focus:outline-none focus:border-yellow-400 placeholder-red-400/50 transition-colors"
+                disabled
+                className="w-full h-12 box-border bg-red-950/50 border border-red-700 rounded-lg px-3 py-0 text-base text-white focus:outline-none focus:border-yellow-400 placeholder-red-400/50 transition-colors opacity-70 cursor-not-allowed"
                 placeholder="請輸入會員電話 (09xxxxxxxx)"
                 required
               />
@@ -927,7 +928,8 @@ function App() {
                     const clamped = v < min ? min : v > max ? max : v;
                     setFormData({ ...formData, date: clamped });
                   }}
-                  className="w-full h-12 box-border bg-red-950/50 border border-red-700 rounded-lg px-3 py-0 text-base text-white focus:outline-none focus:border-yellow-400 [color-scheme:dark]"
+                  disabled
+                  className="w-full h-12 box-border bg-red-950/50 border border-red-700 rounded-lg px-3 py-0 text-base text-white focus:outline-none focus:border-yellow-400 [color-scheme:dark] opacity-70 cursor-not-allowed"
                   required
                 />
               </div>
@@ -946,7 +948,8 @@ function App() {
                       room: newRooms[0] || "",
                     });
                   }}
-                  className="w-full h-12 box-border bg-red-950/50 border border-red-700 rounded-lg px-3 py-0 text-base text-white focus:outline-none focus:border-yellow-400 appearance-none"
+                  disabled
+                  className="w-full h-12 box-border bg-red-950/50 border border-red-700 rounded-lg px-3 py-0 text-base text-white focus:outline-none focus:border-yellow-400 appearance-none opacity-70 cursor-not-allowed"
                 >
                   {BRANCHES.map((b) => (
                     <option key={b} value={b}>
@@ -967,7 +970,8 @@ function App() {
                   onChange={(e) =>
                     setFormData({ ...formData, room: e.target.value })
                   }
-                  className="w-full h-12 box-border bg-red-950/50 border border-red-700 rounded-lg px-3 py-0 text-base text-white focus:outline-none focus:border-yellow-400 appearance-none"
+                  disabled
+                  className="w-full h-12 box-border bg-red-950/50 border border-red-700 rounded-lg px-3 py-0 text-base text-white focus:outline-none focus:border-yellow-400 appearance-none opacity-70 cursor-not-allowed"
                 >
                   {getCurrentRooms().map((r) => (
                     <option key={r} value={r}>
@@ -988,7 +992,8 @@ function App() {
                       duration: parseInt(e.target.value),
                     })
                   }
-                  className="w-full h-12 box-border bg-red-950/50 border border-red-700 rounded-lg px-3 py-0 text-base text-white focus:outline-none focus:border-yellow-400 appearance-none"
+                  disabled
+                  className="w-full h-12 box-border bg-red-950/50 border border-red-700 rounded-lg px-3 py-0 text-base text-white focus:outline-none focus:border-yellow-400 appearance-none opacity-70 cursor-not-allowed"
                 >
                   {DURATIONS.map((d) => (
                     <option key={d.label} value={d.val}>
@@ -1007,16 +1012,10 @@ function App() {
 
             <button
               type="submit"
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-yellow-400 to-yellow-600 hover:from-yellow-300 hover:to-yellow-500 text-red-900 font-bold py-3 rounded-lg shadow-lg transform active:scale-95 transition-all flex justify-center items-center gap-2 mt-4"
+              disabled
+              className="w-full bg-gray-500 text-gray-300 font-bold py-3 rounded-lg shadow cursor-not-allowed flex justify-center items-center gap-2 mt-4 opacity-80"
             >
-              {loading ? (
-                <Loader2 className="animate-spin" />
-              ) : (
-                <>
-                  <Ticket size={20} /> 確認資料並抽獎
-                </>
-              )}
+              <Ticket size={20} /> 活動已結束
             </button>
             <p className="text-center text-xs text-red-300 mt-2">
               不論消費時數都可登錄刮刮樂
@@ -1247,7 +1246,7 @@ function App() {
                         <td className="p-4 text-gray-500">
                           {row.timestamp
                             ? new Date(
-                                row.timestamp.seconds * 1000
+                                row.timestamp.seconds * 1000,
                               ).toLocaleString("zh-TW")
                             : "剛剛"}
                         </td>
